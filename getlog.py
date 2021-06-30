@@ -11,7 +11,8 @@ from exmail import *
 DEPARTMENT_JSON = 'department.json'
 DEPT_USER_JSON = 'dept-user.json'
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, filename='exmail.log',
+                    format='%(asctime)s - %(levelname)s : %(message)s')
 
 def getDepartment(deptId: int):
     with open(DEPARTMENT_JSON) as fp:
