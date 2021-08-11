@@ -168,3 +168,24 @@ class ExMailContactApi(ExMailApi):
         else:
             logging.error(f'Error fetching users from department [{dept.id}], error is {data["errcode"]}({data["errmsg"]})')
             return {}
+    
+    def updateMember(self, userid: str, data: dict) -> bool:
+        '''
+        更新用户信息
+        https://exmail.qq.com/qy_mng_logic/doc#10015
+        '''
+        url = self._base + 'user/update'
+        params = {
+            'access_token': self.getToken()
+        }
+        jsonData = {
+            'userid': userid
+        }
+        jsonData.update(data)
+        r = self._session.post(url, params=params, json=jsonData)
+        data = r.json()
+        logging.info(f'Update user info for {userid} with data {str(jsonData)}, result is {data["errcode"]}, message is {data["errmsg"]}')
+        if data['errcode'] == 0:
+            return True
+        else:
+            return False
