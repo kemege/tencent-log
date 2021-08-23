@@ -168,6 +168,25 @@ class ExMailContactApi(ExMailApi):
         else:
             logging.error(f'Error fetching users from department [{dept.id}], error is {data["errcode"]}({data["errmsg"]})')
             return {}
+        
+    def getMemberDetail(self, dept: Department, fetchChild: bool = False) -> dict:
+        url = self._base + 'user/list'
+        params = {
+            'department_id': dept.id,
+            'access_token': self.getToken(),
+            'fetch_child': 1 if fetchChild else 0
+        }
+        r = self._session.get(url, params=params)
+        data = r.json()
+        if data['errcode'] == 0:
+            result = {}
+            for user in data['userlist']:
+                result[user['userid']] = user
+            logging.info(f'Got {len(result)} users from department [{dept.id}]')
+            return result
+        else:
+            logging.error(f'Error fetching users from department [{dept.id}], error is {data["errcode"]}({data["errmsg"]})')
+            return {}
     
     def updateMember(self, userid: str, data: dict) -> bool:
         '''

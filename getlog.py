@@ -45,7 +45,7 @@ def syncDepartmentUserList(client: ExMailContactApi, deptId: int):
 
 def syncUserList(client: ExMailContactApi, config: dict):
     '''同步用户列表'''
-    userList = client.getMemberBrief(Department.root(), True)
+    userList = client.getMemberDetail(Department.root(), True)
     logging.info(f'Fetched {len(userList)} users')
     db = getDB(config['db'])
     with sqlalchemy.orm.Session(db) as session:
@@ -53,7 +53,9 @@ def syncUserList(client: ExMailContactApi, config: dict):
         for u in userList.values():
             data = {
                 'address': u['userid'],
-                'department_id': ','.join([str(x) for x in u['department']])
+                'department_id': ','.join([str(x) for x in u['department']]),
+                'alias': ','.join(u['slaves']),
+                'need_reset_password': u['cpwd_login']
             }
             stmt = sqlalchemy.dialects.mysql.insert(MailBox).values(data).on_duplicate_key_update(data)
             session.execute(stmt)

@@ -1,3 +1,4 @@
+import datetime
 import enum
 from sqlalchemy import Column, String, Integer, DateTime, Enum, BigInteger, UniqueConstraint, Index
 import sqlalchemy
@@ -60,6 +61,9 @@ class MailBox(Base):
     __tablename__ = 'mail_box'
     address = Column(String(255), primary_key=True)
     department_id = Column(String(255))
+    alias = Column(String(255))
+    need_reset_password = Column(Integer)
+    updated = Column(DateTime, default=datetime.datetime.fromtimestamp(0))
 
 class LoginLog(Base):
     __tablename__ = 'login_log'
