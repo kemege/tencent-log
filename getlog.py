@@ -55,7 +55,8 @@ def syncUserList(client: ExMailContactApi, config: dict):
                 'address': u['userid'],
                 'department_id': ','.join([str(x) for x in u['department']]),
                 'alias': ','.join(u['slaves']),
-                'need_reset_password': u['cpwd_login']
+                'need_reset_password': u['cpwd_login'],
+                'updated': datetime.datetime.now()
             }
             stmt = sqlalchemy.dialects.mysql.insert(MailBox).values(data).on_duplicate_key_update(data)
             session.execute(stmt)
