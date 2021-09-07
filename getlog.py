@@ -123,43 +123,71 @@ def mailLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: da
                 session.execute(insert(MailLog).values(data).on_duplicate_key_update(data))
             session.commit()
 
+
+def opLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: datetime.date):
+    '''同步邮件日志'''
+    db = getDB(config['db'])
+    logging.info('Selecting users for fetching mail logs')
+    with sqlalchemy.orm.Session(db) as session:
+        logging.info(f'Fetching op log for from {date1.isoformat()} to {date2.isoformat()}')
+        logs = client.getOpLog(date1, date2)
+        session.begin()
+        for log in logs:
+            print(log)
+            data = {
+                'time': datetime.datetime.fromtimestamp(log['time']),
+                'operator': log['operator'],
+                'operand': log['operand'],
+                'type': ExMailOpType(log['type'])
+            }
+            session.execute(insert(OpLog).values(data).on_duplicate_key_update(data))
+        session.commit()
+
 def getDB(config: dict):
     '''连接数据库'''
     url = f'mysql+pymysql://{config["user"]}:{config["password"]}@{config["host"]}:{config["port"]}/{config["database"]}'
     return sqlalchemy.create_engine(url)
 
 class CLI:
+    '''腾讯企业邮箱API同步工具'''
     '''控制对外暴露的函数列表'''
     def __init__(self) -> None:
         with open('config.json') as fp:
-            self.config = json.load(fp)
-        self.logClient = ExMailLogApi()
-        self.contactClient = ExMailContactApi()
+            self._config = json.load(fp)
+        self._logClient = ExMailLogApi()
+        self._contactClient = ExMailContactApi()
 
     def syncDepartment(self) -> None:
         '''同步所有部门信息'''
-        syncDepartmentList(self.contactClient)
+        syncDepartmentList(self._contactClient)
     
     def syncLoginLog(self) -> None:
         '''同步最近两天的登录日志'''
         date1 = datetime.date.today() - datetime.timedelta(days=2)
         date2 = datetime.date.today()
-        loginLogs(self.logClient, self.config, date1, date2)
+        loginLogs(self._logClient, self._config, date1, date2)
     
     def syncMailLog(self) -> None:
         '''同步最近两天的邮件日志'''
         date1 = datetime.date.today() - datetime.timedelta(days=2)
         date2 = datetime.date.today()
-        mailLogs(self.logClient, self.config, date1, date2)
+        mailLogs(self._logClient, self._config, date1, date2)
     
     def initDB(self) -> None:
         '''初始化数据表'''
-        db = getDB(self.config['db'])
+        db = getDB(self._config['db'])
         create_all(db)
     
     def syncUser(self) -> None:
         '''同步用户列表'''
-        syncUserList(self.contactClient, self.config)
+        syncUserList(self._contactClient, self._config)
+
+    def syncOpLog(self) -> None:
+        '''同步最近两天的操作日志'''
+        date1 = datetime.date.today() - datetime.timedelta(days=2)
+        date2 = datetime.date.today()
+        opLogs(self._logClient, self._config, date1, date2)
+
 
 if __name__ == '__main__':
     fire.Fire(CLI)
