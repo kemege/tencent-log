@@ -108,6 +108,29 @@ class ExMailLogApi(ExMailApi):
         else:
             logging.error(f'Error fetching mail log for user {userId}, error is {data["errcode"]}({data["errmsg"]})')
             return []
+    
+    def getOpLog(self, dateFrom: datetime.date, dateTo: datetime.date, type: ExMailOpQueryType = ExMailOpQueryType.ALL):
+        '''
+        获取操作记录
+        https://exmail.qq.com/qy_mng_logic/doc#10031
+        '''
+        url = self._base + 'log/operation'
+        jsonData = {
+            'begin_date': dateFrom.isoformat(),
+            'end_date': dateTo.isoformat(),
+            'type': type.value
+        }
+        params = {
+            'access_token': self.getToken()
+        }
+        r = self._session.post(url, json=jsonData, params=params)
+        data = r.json()
+        if data['errcode'] == 0:
+            return data['list']
+        else:
+            logging.error(f'Error fetching op log for type {type}, error is {data["errcode"]}({data["errmsg"]})')
+            return []
+
 
 class ExMailContactApi(ExMailApi):
     _config = 'contact.json'
