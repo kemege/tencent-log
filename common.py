@@ -43,6 +43,7 @@ class ExMailOpQueryType(enum.Enum):
     MEMBER_PERMISSION = 9
 
 class ExMailOpType(enum.Enum):
+    RESERVED = 0  # Not documented
     LOGIN = 1
     CHANGE_PASSWORD = 2
     ADD_DOMAIN = 3
@@ -63,6 +64,7 @@ class ExMailOpType(enum.Enum):
     DELETE_DOMAIN_WHITELIST = 18
     ADD_USER = 19
     DELETE_USER = 20
+    ENABLE_USER = 21
     DISABLE_USER = 22
     EDIT_USER = 23
     EDIT_USER_ALIAS = 24
@@ -201,6 +203,8 @@ class OpLog(Base):
     operator = Column(String(255))
     type = Column(Enum(ExMailOpType))
     operand = Column(String(255))
+
+    uniqueIndex = UniqueConstraint(time, operator, type, operand)
 
     def __repr__(self) -> str:
         return f'OpLog(time={self.time}, operator={self.operator}, type={self.type}, operand={self.operand})'
