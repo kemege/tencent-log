@@ -133,7 +133,6 @@ def opLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: date
         logs = client.getOpLog(date1, date2)
         session.begin()
         for log in logs:
-            print(log)
             data = {
                 'time': datetime.datetime.fromtimestamp(log['time']),
                 'operator': log['operator'],
