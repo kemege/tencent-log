@@ -101,6 +101,7 @@ def loginLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: d
 
         for f in concurrent.futures.as_completed(futureList):
             _ = f.result()
+    logging.info(f'Finished fetching login logs for {len(mailboxes)} users')
 
 
 def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, client: ExMailLogApi, session: sqlalchemy.orm.Session):
@@ -144,12 +145,13 @@ def mailLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: da
 
         for f in concurrent.futures.as_completed(futureList):
             _ = f.result()
+    logging.info(f'Finished fetching mail logs for {len(mailboxes)} users')
 
 
 def opLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: datetime.date):
     '''同步邮件日志'''
     db = getDB(config['db'])
-    logging.info('Selecting users for fetching mail logs')
+    logging.info('Start fetching op logs')
     with sqlalchemy.orm.Session(db) as session:
         logging.info(f'Fetching op log for from {date1.isoformat()} to {date2.isoformat()}')
         logs = client.getOpLog(date1, date2)
@@ -163,6 +165,7 @@ def opLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: date
             }
             session.execute(insert(OpLog).values(data).on_duplicate_key_update(data))
         session.commit()
+    logging.info('Finished fetching op logs')
 
 def getDB(config: dict):
     '''连接数据库'''
