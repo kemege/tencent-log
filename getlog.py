@@ -68,7 +68,6 @@ def singleLoginLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cl
     logging.info(f'Fetching login log for user {mailbox} from {date1.isoformat()} to {date2.isoformat()}')
     try:
         logs = client.getLoginLog(mailbox, date1, date2)
-        session.begin()
         for log in logs:
             data = {
                 'time': datetime.datetime.fromtimestamp(log['time']),
@@ -77,7 +76,6 @@ def singleLoginLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cl
                 'ip': log['ip']
             }
             session.execute(insert(LoginLog).values(data).on_duplicate_key_update(data))
-        session.commit()
     except Exception as ex:
         logging.error(f'Error fetching login log for user {mailbox}, reason: {repr(ex)}')
 
@@ -94,6 +92,7 @@ def loginLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: d
 
     with sqlalchemy.orm.Session(db) as session:
         futureList = []
+        session.begin()
         with concurrent.futures.ThreadPoolExecutor(max_workers=config['parallel']) as executor:
             for m in mailboxes:
                 future = executor.submit(singleLoginLogs, m, date1, date2, client, session)
@@ -101,6 +100,8 @@ def loginLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: d
 
         for f in concurrent.futures.as_completed(futureList):
             _ = f.result()
+
+        session.commit()
     logging.info(f'Finished fetching login logs for {len(mailboxes)} users')
 
 
@@ -109,7 +110,6 @@ def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cli
     logging.info(f'Fetching mail log for user {mailbox} from {date1.isoformat()} to {date2.isoformat()}')
     try:
         logs = client.getMailLog(mailbox, date1, date2)
-        session.begin()
         for log in logs:
             data = {
                 'time': datetime.datetime.fromtimestamp(log['time']),
@@ -120,7 +120,6 @@ def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cli
                 'type': ExMailType(log['mailtype'])
             }
             session.execute(insert(MailLog).values(data).on_duplicate_key_update(data))
-        session.commit()
     except Exception as ex:
         logging.error(f'Error fetching mail log for user {mailbox}, reason: {repr(ex)}')
 
@@ -138,6 +137,7 @@ def mailLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: da
 
     with sqlalchemy.orm.Session(db) as session:
         futureList = []
+        session.begin()
         with concurrent.futures.ThreadPoolExecutor(max_workers=config['parallel']) as executor:
             for m in mailboxes:
                 future = executor.submit(singleMailLogs, m, date1, date2, client, session)
@@ -145,6 +145,7 @@ def mailLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: da
 
         for f in concurrent.futures.as_completed(futureList):
             _ = f.result()
+        session.commit()
     logging.info(f'Finished fetching mail logs for {len(mailboxes)} users')
 
 
