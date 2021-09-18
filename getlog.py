@@ -77,6 +77,7 @@ def singleLoginLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cl
                 'ip': log['ip']
             }
             result.append(data)
+        return result
     except Exception as ex:
         logging.error(f'Error fetching login log for user {mailbox}, reason: {repr(ex)}')
 
@@ -123,6 +124,7 @@ def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cli
                 'type': ExMailType(log['mailtype'])
             }
             result.append(data)
+        return result
     except Exception as ex:
         logging.error(f'Error fetching mail log for user {mailbox}, reason: {repr(ex)}')
 
