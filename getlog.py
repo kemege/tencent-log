@@ -63,10 +63,11 @@ def syncUserList(client: ExMailContactApi, config: dict):
         session.commit()
     logging.info('User fetching is finished')
 
-def singleLoginLogs(mailbox: str, date1: datetime.date, date2: datetime.date, client: ExMailLogApi, session: sqlalchemy.orm.Session):
+def singleLoginLogs(mailbox: str, date1: datetime.date, date2: datetime.date, client: ExMailLogApi):
     '''获取单个用户的登录日志并储存至数据库'''
     logging.info(f'Fetching login log for user {mailbox} from {date1.isoformat()} to {date2.isoformat()}')
     try:
+        result = []
         logs = client.getLoginLog(mailbox, date1, date2)
         for log in logs:
             data = {
@@ -75,7 +76,7 @@ def singleLoginLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cl
                 'type': ExLoginType(log['type']),
                 'ip': log['ip']
             }
-            session.execute(insert(LoginLog).values(data).on_duplicate_key_update(data))
+            result.append(data)
     except Exception as ex:
         logging.error(f'Error fetching login log for user {mailbox}, reason: {repr(ex)}')
 
@@ -95,21 +96,23 @@ def loginLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: d
         session.begin()
         with concurrent.futures.ThreadPoolExecutor(max_workers=config['parallel']) as executor:
             for m in mailboxes:
-                future = executor.submit(singleLoginLogs, m, date1, date2, client, session)
+                future = executor.submit(singleLoginLogs, m, date1, date2, client)
                 futureList.append(future)
 
         for f in concurrent.futures.as_completed(futureList):
-            _ = f.result()
+            for data in f.result():
+                session.execute(insert(LoginLog).values(data).on_duplicate_key_update(data))
 
         session.commit()
     logging.info(f'Finished fetching login logs for {len(mailboxes)} users')
 
 
-def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, client: ExMailLogApi, session: sqlalchemy.orm.Session):
+def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, client: ExMailLogApi):
     '''获取单个用户的邮件日志并储存至数据库'''
     logging.info(f'Fetching mail log for user {mailbox} from {date1.isoformat()} to {date2.isoformat()}')
     try:
         logs = client.getMailLog(mailbox, date1, date2)
+        result = []
         for log in logs:
             data = {
                 'time': datetime.datetime.fromtimestamp(log['time']),
@@ -119,7 +122,7 @@ def singleMailLogs(mailbox: str, date1: datetime.date, date2: datetime.date, cli
                 'status': ExMailStatus(log['status']),
                 'type': ExMailType(log['mailtype'])
             }
-            session.execute(insert(MailLog).values(data).on_duplicate_key_update(data))
+            result.append(data)
     except Exception as ex:
         logging.error(f'Error fetching mail log for user {mailbox}, reason: {repr(ex)}')
 
@@ -140,11 +143,12 @@ def mailLogs(client: ExMailLogApi, config: dict, date1: datetime.date, date2: da
         session.begin()
         with concurrent.futures.ThreadPoolExecutor(max_workers=config['parallel']) as executor:
             for m in mailboxes:
-                future = executor.submit(singleMailLogs, m, date1, date2, client, session)
+                future = executor.submit(singleMailLogs, m, date1, date2, client)
                 futureList.append(future)
 
         for f in concurrent.futures.as_completed(futureList):
-            _ = f.result()
+            for data in f.result():
+                session.execute(insert(MailLog).values(data).on_duplicate_key_update(data))
         session.commit()
     logging.info(f'Finished fetching mail logs for {len(mailboxes)} users')
 
